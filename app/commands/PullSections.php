@@ -11,14 +11,14 @@ class PullSections extends ScheduleCommand {
 	 *
 	 * @var string
 	 */
-	protected $name = 'command:name';
+	protected $name = 'schedule:sections';
 
 	/**
 	 * The console command description.
 	 *
 	 * @var string
 	 */
-	protected $description = 'Command description.';
+	protected $description = 'Pull in the individual sections.';
 
 	/**
 	 * Create a new command instance.
@@ -37,7 +37,12 @@ class PullSections extends ScheduleCommand {
 	 */
 	public function fire()
 	{
-		//
+		// Try and retrieve all the departments
+		ignore_user_abort(TRUE);
+		set_time_limit(500);
+		
+		// Clear all courses
+		DB::table('sections')->truncate();
 	}
 
 	/**
@@ -47,6 +52,7 @@ class PullSections extends ScheduleCommand {
 	 */
 	protected function getArguments()
 	{
+		return [];
 		return array(
 			array('example', InputArgument::REQUIRED, 'An example argument.'),
 		);
@@ -59,6 +65,7 @@ class PullSections extends ScheduleCommand {
 	 */
 	protected function getOptions()
 	{
+		return [];
 		return array(
 			array('example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null),
 		);

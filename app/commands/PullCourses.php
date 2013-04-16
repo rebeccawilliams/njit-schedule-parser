@@ -37,6 +37,10 @@ class PullCourses extends ScheduleCommand {
 	 */
 	public function fire()
 	{
+		// Try and retrieve all the departments
+		ignore_user_abort(TRUE);
+		set_time_limit(500);
+		
 		// Clear all courses
 		DB::table('courses')->truncate();
 
@@ -55,7 +59,7 @@ class PullCourses extends ScheduleCommand {
 				$plain = trim($course->plaintext);
 				$plain = str_replace('   ', '  ', $plain);
 				$plain = str_replace('  ', ' ', $plain);
-				
+
 				list($department, $course, $name) = explode(' ', $plain, 3);
 
 				$this->comment('Adding '.$plain);

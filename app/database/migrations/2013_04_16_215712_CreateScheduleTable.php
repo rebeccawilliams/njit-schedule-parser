@@ -32,7 +32,10 @@ class CreateScheduleTable extends Migration {
 			$table->string('course');
 			$table->integer('section');
 			$table->string('days');
-			$table->string('times');
+
+			$table->time('start_time');
+			$table->time('end_time');
+			
 			$table->string('room');
 			$table->string('instructor');
 			$table->string('comments');
