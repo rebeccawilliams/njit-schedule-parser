@@ -1,6 +1,8 @@
 {
 	"require": {
-		"laravel/framework": "4.0.*"
+		"laravel/framework": "4.0.*",
+		"guzzle/guzzle": "v3.4.1",
+		"way/generators": "dev-master"
 	},
 	"autoload": {
 		"classmap": [
