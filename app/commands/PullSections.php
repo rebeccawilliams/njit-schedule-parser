@@ -1,22 +1,24 @@
 <?php
 
+use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-class PullDepartments extends ScheduleCommand {
+class PullSections extends ScheduleCommand {
+
 	/**
 	 * The console command name.
 	 *
 	 * @var string
 	 */
-	protected $name = 'schedule:departments';
+	protected $name = 'command:name';
 
 	/**
 	 * The console command description.
 	 *
 	 * @var string
 	 */
-	protected $description = 'Pull and Sync the departments';
+	protected $description = 'Command description.';
 
 	/**
 	 * Create a new command instance.
@@ -35,35 +37,7 @@ class PullDepartments extends ScheduleCommand {
 	 */
 	public function fire()
 	{
-		// Try and retrieve all the departments
-		ignore_user_abort(TRUE);
-		set_time_limit(500);
-
-		// Clear the departments table
-		DB::table('departments')->truncate();
-
-		// Start to pull them in
-		$client = $this->client();
-		$departments = $client->post(null, null, [
-			'SEMESTER' => $this->semester(),
-			'CHOICE' => $this->semester()
-		])->send();
-		$body = $departments->getBody(true);
-		$dom = $this->dom($body);
-
-		$dep_listing = $dom->find('select', 0)->childNodes();
-		$count = 0;
-
-		foreach($dep_listing as $dep) :
-			$d = new Department;
-			$d->name = trim($dep->plaintext);
-			$d->save();
-
-			$count += 1;
-
-		endforeach;
-		
-		$this->info(number_format($count) . ' Departments registered.');
+		//
 	}
 
 	/**
@@ -73,8 +47,6 @@ class PullDepartments extends ScheduleCommand {
 	 */
 	protected function getArguments()
 	{
-		return [];
-
 		return array(
 			array('example', InputArgument::REQUIRED, 'An example argument.'),
 		);

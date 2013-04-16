@@ -1,0 +1,23 @@
+{
+    "name": "vendor/schedule",
+    "description": "",
+    "authors": [
+        {
+            "name": "Sean Fisher",
+            "email": "srtfisher@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "illuminate/support": "4.0.x"
+    },
+    "autoload": {
+        "classmap": [
+            "src/migrations"
+        ],
+        "psr-0": {
+            "Vendor\\Schedule": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
