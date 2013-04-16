@@ -11,6 +11,11 @@ class CreateScheduleTable extends Migration {
 	 */
 	public function up()
 	{
+		Schema::create('departments', function($table)
+		{
+			$table->string('name');
+		});
+
 		Schema::create('courses', function($table)
 		{
 			//$table->increments('id');
@@ -44,6 +49,7 @@ class CreateScheduleTable extends Migration {
 	 */
 	public function down()
 	{
+		Schema::drop('departments');
 		Schema::drop('courses');
 		Schema::drop('sections');
 	}

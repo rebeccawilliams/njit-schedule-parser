@@ -4,23 +4,21 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-class PullSchedule extends Command {
-	private $base = 'http://www.njit.edu/registrar/cgi-bin/schedule_builder.cgi';
-	private $semester = 'Fall';
+class PullCourses extends Command {
 
 	/**
 	 * The console command name.
 	 *
 	 * @var string
 	 */
-	protected $name = 'schedule:pull';
+	protected $name = 'schedule:courses';
 
 	/**
 	 * The console command description.
 	 *
 	 * @var string
 	 */
-	protected $description = 'Pull and Sync the schedule';
+	protected $description = 'Command description.';
 
 	/**
 	 * Create a new command instance.
@@ -39,23 +37,7 @@ class PullSchedule extends Command {
 	 */
 	public function fire()
 	{
-		// Try and retrieve all the departments
-		ignore_user_abort(TRUE);
-		set_time_limit(500);
-
-		$client = $this->client();
-		$departments = $client->post(null, null, [
-			'SEMESTER' => $this->semester,
-			'CHOICE' => $this->semester
-		])->send();
-
-		var_dump($departments->getBody(true));
-		exit;
-	}
-
-	private function client()
-	{
-		return new Guzzle\Http\Client($this->base);
+		//
 	}
 
 	/**
@@ -65,8 +47,6 @@ class PullSchedule extends Command {
 	 */
 	protected function getArguments()
 	{
-		return [];
-
 		return array(
 			array('example', InputArgument::REQUIRED, 'An example argument.'),
 		);

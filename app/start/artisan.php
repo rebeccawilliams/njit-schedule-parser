@@ -11,4 +11,5 @@
 |
 */
 
-Artisan::add(new PullSchedule);
+Artisan::add(new PullDepartments);
+Artisan::add(new PullCourses);
