@@ -18,7 +18,7 @@ class PullSections extends ScheduleCommand {
 	 *
 	 * @var string
 	 */
-	protected $description = 'Pull in the individual sections.';
+	protected $description = 'Pull in the individual sections for a department.';
 
 	/**
 	 * Create a new command instance.
@@ -41,10 +41,12 @@ class PullSections extends ScheduleCommand {
 		ignore_user_abort(TRUE);
 		set_time_limit(500);
 		
-		// Clear all courses
-		DB::table('sections')->truncate();
+		// Clear all courses in the department
+		Section::whereDepartment($this->argument('department'))
+			->delete();
 
-		$courses = Course::all();
+		$courses = Course::whereDepartment($this->argument('department'))
+			->get();
 
 		foreach($courses as $cou) :
 			// Make a request
@@ -192,10 +194,9 @@ class PullSections extends ScheduleCommand {
 	 */
 	protected function getArguments()
 	{
-		return [];
-		return array(
-			array('example', InputArgument::REQUIRED, 'An example argument.'),
-		);
+		return [
+			['department', InputArgument::REQUIRED, 'Course Department']
+		];
 	}
 
 	/**
