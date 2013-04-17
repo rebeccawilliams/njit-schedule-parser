@@ -13,3 +13,4 @@
 
 Artisan::add(new PullDepartments);
 Artisan::add(new PullCourses);
+Artisan::add(new PullSections);

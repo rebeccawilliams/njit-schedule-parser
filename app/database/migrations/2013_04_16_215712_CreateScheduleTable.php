@@ -29,8 +29,9 @@ class CreateScheduleTable extends Migration {
 		Schema::create('sections', function($table)
 		{
 			// ACCT 117
+			$table->string('department');
 			$table->string('course');
-			$table->integer('section');
+			$table->string('section');
 			$table->string('days');
 
 			$table->time('start_time');
