@@ -39,36 +39,39 @@ class PullCourses extends ScheduleCommand {
 	{
 		// Try and retrieve all the departments
 		ignore_user_abort(TRUE);
-		set_time_limit(500);
 		
 		// Clear all courses
 		DB::table('courses')->truncate();
 
 		$departments = Department::all();
 		foreach($departments as $dep) :
-			// Make a request
-			$request = $this->client()->post(null, null, [
-				'CHOICE' => 'Add By Subject',
-				'SUBJ' => $dep->name,
-				'SEMESTER' => $this->semester()
-			])->send();
+			list($department_id, $department_name) = explode(Config::get('schedule.delim'), $dep->name, 2);
+			$department_id = trim($department_id);
+			$department_name = trim($department_name);
+			$url = sprintf(Config::get('schedule.department'), Config::get('schedule.semester'), $department_id);
+
+			$request = $this->client()->get($url, null)->send();
 			$body = $request->getBody(true);
 			$dom = $this->dom($body);
 
-			foreach($dom->find('select', 0)->childNodes() as $course) :
+			foreach($dom->find('.courseName a') as $course) :
 				$plain = trim($course->plaintext);
 				$plain = str_replace('   ', '  ', $plain);
 				$plain = str_replace('  ', ' ', $plain);
 
 				list($department, $course, $name) = explode(' ', $plain, 3);
 
-				$this->comment('Adding '.$plain);
-
 				$c = new Course;
-				$c->department = trim($department);
+				$c->department = trim($department_id);
 				$c->course = trim($course);
-				$c->course_name = trim($name);
+				$c->course_name = str_replace('(', ' (',
+					trim(
+						str_replace('- ', '', $name)
+					)
+				);
 				$c->save();
+
+				$this->comment('Adding '.$c->course_name);
 			endforeach;
 		endforeach;
 

@@ -7,9 +7,12 @@ use Symfony\Component\Console\Input\InputArgument;
 use Illuminate\Support\Facades\Config;
 
 class ScheduleCommand extends Command {
-	protected function client()
+	protected function client($u = NULL)
 	{
-		return new \Guzzle\Http\Client($this->base());
+		if ($u == NULL)
+			$u = $this->base();
+
+		return new \Guzzle\Http\Client($u);
 	}
 
 	protected function dom($str, $lowercase=true, $forceTagsClosed=true, $target_charset = DEFAULT_TARGET_CHARSET, $stripRN=true, $defaultBRText=DEFAULT_BR_TEXT, $defaultSpanText=DEFAULT_SPAN_TEXT)

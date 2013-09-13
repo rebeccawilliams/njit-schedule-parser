@@ -43,26 +43,25 @@ class PullDepartments extends ScheduleCommand {
 		DB::table('departments')->truncate();
 
 		// Start to pull them in
-		$client = $this->client();
+		$url = sprintf(Config::get('schedule.listing'), Config::get('schedule.semester'));
+		
+		$client = $this->client($url);
 		$departments = $client->post(null, null, [
 			'SEMESTER' => $this->semester(),
 			'CHOICE' => $this->semester()
 		])->send();
 		$body = $departments->getBody(true);
 		$dom = $this->dom($body);
-
-		$dep_listing = $dom->find('select', 0)->childNodes();
 		$count = 0;
 
-		foreach($dep_listing as $dep) :
+		// Go though each LETTER
+		foreach ($dom->find('span a') as $department) :
 			$d = new Department;
-			$d->name = trim($dep->plaintext);
+			$d->name = trim($department->plaintext);
 			$d->save();
 
 			$count += 1;
-
 		endforeach;
-		
 		$this->info(number_format($count) . ' Departments registered.');
 	}
 
