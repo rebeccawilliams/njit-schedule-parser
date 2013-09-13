@@ -40,37 +40,36 @@ class PullSections extends ScheduleCommand {
 		// Try and retrieve all the departments
 		ignore_user_abort(TRUE);
 		set_time_limit(500);
+
+		list($department_id, $department_name) = explode(Config::get('schedule.delim'), $this->argument('department'), 2);
+		$department_id = trim($department_id);
+		$department_name = trim($department_name);
 		
 		// Clear all courses in the department
-		Section::whereDepartment($this->argument('department'))
-			->delete();
+		Section::whereDepartment($department_id)->delete();
 
-		$courses = Course::whereDepartment($this->argument('department'))
-			->get();
+		$courses = Course::whereDepartment($department_id)->get();
 
-		foreach($courses as $cou) :
+		foreach($courses as $course) :
 			// Make a request
 			// CHOICE:Submit Course
-			$request = $this->client()->post(null, null, [
-				'CHOICE' => 'Submit Course',
-				'COUR' => $cou->course,
-				'SUBJ' => $cou->department,
-				'SEMESTER' => $this->semester()
-			])->send();
+			$url = Config::get('schedule.section');
+			$url = sprintf($url, Config::get('schedule.semester'), $department_id, $course->course);
+			$request = $this->client()->get($url, null)->send();
 			$body = $request->getBody(true);
 			$dom = $this->dom($body);
 
 			$count = 0;
-			$section_row_data = $dom->find('table', 0)->find('tr');
+			$section_row_data = $dom->find('tr.sectionRow');
 			foreach($section_row_data as $section_row) :
 				// Skip the header row
 				$count += 1;
-				if ($count < 4) continue;
+				//if ($count < 4) continue;
 				
 				// See if it's the last
-				if ($count == count($section_row_data)) continue;
+				//if ($count == count($section_row_data)) continue;
 
-				$section = trim($section_row->find('td', 0)->plaintext);
+				$section = trim($section_row->find('td.section', 0)->plaintext);
 
 				// Location
 				$location = trim($section_row->find('td', 3)->plaintext);

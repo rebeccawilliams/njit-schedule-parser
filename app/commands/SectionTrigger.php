@@ -43,7 +43,7 @@ class SectionTrigger extends ScheduleCommand {
 		foreach($departments as $dep) :
 			$count += 1;
 			$this->comment('Triggering '.$dep->name);
-			$e = 'php '.dirname(dirname(__DIR__)).'/artisan schedule:sections '.$dep->name.' >> /dev/null &';
+			$e = '/usr/bin/env php '.dirname(dirname(__DIR__)).'/artisan schedule:sections '.$dep->name.' >> /dev/null &';
 			exec($e);
 		endforeach;
 
