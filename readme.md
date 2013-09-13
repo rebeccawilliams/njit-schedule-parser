@@ -1,13 +1,10 @@
-## Laravel 4.x
+NJIT Schedule Parser
+============
 
-### A Framework For Web Artisans
+Built in 2013, I'm attempting to facilitate a way to pull in NJIT's schedule and query it for 
+your own recreational use. Some things that you *could* do with it:
 
-[Official Documentation](http://four.laravel.com) (Under Active Development)
-
-### Contributing To Laravel
-
-**All issues and pull requests should be filed on the [laravel/framework](http://github.com/laravel/framework) repository.**
-
-### License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT)
+- Query it
+- Find courses that fit YOUR NEEDS
+- Find courses that are OPEN (haha, loljk they're all going to be closed)
+- DO STUFF
