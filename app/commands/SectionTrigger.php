@@ -37,6 +37,8 @@ class SectionTrigger extends ScheduleCommand {
 	 */
 	public function fire()
 	{
+		$concur = (bool) $this->option('concurrent');
+
 		$departments = Department::all();
 		$count = 0;
 
@@ -47,8 +49,15 @@ class SectionTrigger extends ScheduleCommand {
 			list($department_id, $department_name) = explode(Config::get('schedule.delim'), $dep->name, 2);
 			$department_id = trim($department_id);
 			$department_name = trim($department_name);
-			$e = '/usr/bin/env php '.dirname(dirname(__DIR__)).'/artisan schedule:sections '.$department_id.' >> /dev/null &';
-			exec($e);
+			
+			if ($concur) :
+				$e = '/usr/bin/env php '.dirname(dirname(__DIR__)).'/artisan schedule:sections '.$department_id.' >> /dev/null &';
+				exec($e);
+			else :
+				$this->call('schedule:sections', ['department' => $department_id]);
+				
+				sleep(5);
+			endif;
 		endforeach;
 
 		$this->info('Done triggering!');
@@ -61,10 +70,9 @@ class SectionTrigger extends ScheduleCommand {
 	 */
 	protected function getArguments()
 	{
-		return [];
-		return array(
-			array('example', InputArgument::REQUIRED, 'An example argument.'),
-		);
+		return [
+			array('concurrent', InputArgument::OPTIONAL, 'Run concurrent requests (will require A LOT of CPU and DB Load!)', false),
+		];
 	}
 
 	/**
@@ -74,10 +82,9 @@ class SectionTrigger extends ScheduleCommand {
 	 */
 	protected function getOptions()
 	{
-		return [];
-		return array(
-			array('example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null),
-		);
+		return [
+			array('concurrent', 'c', InputArgument::OPTIONAL, 'Run concurrent requests (will require A LOT of CPU and DB Load!)', false),
+		];
 	}
 
 }
