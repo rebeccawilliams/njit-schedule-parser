@@ -41,9 +41,7 @@ class PullSections extends ScheduleCommand {
 		ignore_user_abort(TRUE);
 		set_time_limit(500);
 
-		list($department_id, $department_name) = explode(Config::get('schedule.delim'), $this->argument('department'), 2);
-		$department_id = trim($department_id);
-		$department_name = trim($department_name);
+		$department_id = strtoupper($this->argument('department'));
 		
 		// Clear all courses in the department
 		Section::whereDepartment($department_id)->delete();
@@ -55,6 +53,7 @@ class PullSections extends ScheduleCommand {
 			// CHOICE:Submit Course
 			$url = Config::get('schedule.section');
 			$url = sprintf($url, Config::get('schedule.semester'), $department_id, $course->course);
+
 			$request = $this->client()->get($url, null)->send();
 			$body = $request->getBody(true);
 			$dom = $this->dom($body);
@@ -62,78 +61,82 @@ class PullSections extends ScheduleCommand {
 			$count = 0;
 			$section_row_data = $dom->find('tr.sectionRow');
 			foreach($section_row_data as $section_row) :
-				// Skip the header row
 				$count += 1;
-				//if ($count < 4) continue;
-				
-				// See if it's the last
-				//if ($count == count($section_row_data)) continue;
 
-				$section = trim($section_row->find('td.section', 0)->plaintext);
+				// Check that status
+				$status = trim($section_row->find('td.status span', 0)->innertext);
+
+				if ($status == 'Cancelled') :
+					$this->info('Section canceled, skipping.');
+					continue;
+				endif;
+
+				$sectionText = trim($section_row->find('td.section', 0)->innertext);
+				$section = explode('<br />', $sectionText)[0];
+				$section = trim($section);
 
 				// Location
-				$location = trim($section_row->find('td', 3)->plaintext);
+				$location = trim($section_row->find('td.room', 0)->plaintext);
 				strip_nb($location);
 				strip_double_space($location);
 
 				// Instructor
-				$instructor = trim($section_row->find('td', 4)->plaintext);
+				$instructor = $section_row->find('td.instructor', 0)->plaintext;
+				$instructor = trim($instructor);
 				strip_nb($instructor);
 				strip_double_space($instructor);
 
+				$credits = (int) $section_row->find('td.credits', 0)->plaintext;
+				$call = (int) $section_row->find('td.call span', 0)->plaintext;
 				// Comments
-				$comments = trim($section_row->find('td', 5)->plaintext);
+				$commentsTd = $section_row->find('td', 2);
+				$commentsText = $commentsTd->find('span', 1);
+				$comments = (! is_null($commentsText)) ? trim($commentsText->plaintext) : '';
+
 				strip_nb($comments);
 				strip_double_space($comments);
 
-				$credits = (int) $section_row->find('td', 8)->plaintext;
+				$times = strtoupper($commentsTd->find('span', 0)->innertext);
 
-				if ($this->is_multi_day($section_row))
+				if ($this->isMultiDayDiff($times))
 				{
-					// Multiple days
-					$time_cell = $section_row->find('td', 2);
-					$day_cell = $section_row->find('td', 1);
+					$times_exploded = explode('<BR>',
+						str_replace('<BR />', '<BR>', $times)
+					);
 
-					$time_exploded = explode('<br>', strtolower($time_cell->innertext));
-					$day_exploded = explode('<br>', strtolower($day_cell->innertext));
+					$location = trim($section_row->find('td.room span', 0)->innertext);
+					$location_exploded = explode('<BR>',
+						str_replace('<BR />', '<BR>', strtoupper($location))
+					);
 
-					if (count($time_exploded) !== count($day_exploded))
+					if (count($times_exploded) !== count($location_exploded))
 						return($this->error('Time count != day count'));
 
-					// Strip the location for the double class
-					$location = $section_row->find('td', 3)->innertext;
-					$location = explode('<BR>', strtoupper($location), 2);
-					$location = trim(strip_tags($location[0]));
-					strip_nb($location);
-					strip_double_space($location);
-
-					for($i = 0; $i < count($time_exploded); $i++) {
-						$time = strip_tags($time_exploded[$i]);
-						$time = str_replace(' ', '', $time);
+					for($i = 0; $i < count($times_exploded); $i++) {
+						list ($days, $hours) = explode(':', $times_exploded[$i], 2);
+						$time = str_replace(' ', '', $hours);
 
 						list($start_time, $end_time) = explode('-', $time, 2);
 						strip_nb($start_time);
 						strip_nb($end_time);
-
-						$day = strip_tags($day_exploded[$i]);
-						strip_nb($day);
-						$day = strtoupper(str_replace(' ', '', $day));
+						fixTimeFormat($start_time);
+						fixTimeFormat($end_time);
 
 						// Just one day
 						$s = new Section;
-						$s->department = $cou->department;
-						$s->course = $cou->course;
+						$s->department = $course->department;
+						$s->course = $course->course;
 						$s->section = $section;
 
-						$s->days = $day;
+						$s->days = trim($days);;
 						$s->start_time = date('H:i:s', strtotime($start_time));
 						$s->end_time = date('H:i:s', strtotime($end_time));
 						
-						$s->room = $location;
-						$s->room = $location;
+						$s->room = $location_exploded[$i];
 						$s->instructor = $instructor;
 						$s->comments = $comments;
 						$s->credits = $credits;
+						$s->call_number = $call;
 						$s->save();
 
 						$this->comment($section.' added.');
@@ -142,35 +145,33 @@ class PullSections extends ScheduleCommand {
 				}
 				else
 				{
-					// Single Day
-					$time_cell = $section_row->find('td', 2);
-					$day_cell = $section_row->find('td', 1);
+					// skip empty times, not university offered
+					if (empty($times)) continue;
 
-					$time = strip_tags($time_cell->plaintext);
-					$time = str_replace(' ', '', $time);
-					
-					$day = strip_tags($day_cell->plaintext);
-					$day = str_replace(' ', '', $day);
-					strip_nb($day);
+					list ($days, $hours) = explode(':', $times, 2);
+					$time = str_replace(' ', '', $hours);
+
 					list($start_time, $end_time) = explode('-', $time, 2);
 					strip_nb($start_time);
 					strip_nb($end_time);
+					fixTimeFormat($start_time);
+					fixTimeFormat($end_time);
 
 					// Just one day
 					$s = new Section;
-					$s->department = $cou->department;
-					$s->course = $cou->course;
+					$s->department = $course->department;
+					$s->course = $course->course;
 					$s->section = $section;
 
-					$s->days = str_replace(' ', '', $day);
+					$s->days = str_replace(' ', '', $days);
 					$s->start_time = date('H:i:s', strtotime($start_time));
 					$s->end_time = date('H:i:s', strtotime($end_time));
-					
 					
 					$s->room = $location;
 					$s->instructor = $instructor;
 					$s->comments = $comments;
 					$s->credits = $credits;
+					$s->call_number = $call;
 					$s->save();
 
 					$this->comment($section.' added.');
@@ -180,7 +181,6 @@ class PullSections extends ScheduleCommand {
 			endforeach;
 			$this->info('Course complete.');
 			sleep(1);
-
 		endforeach;
 
 		$this->info('Import Complete.');
@@ -232,13 +232,17 @@ class PullSections extends ScheduleCommand {
 	}
 
 	/**
+	 * Determine if a section has multiple days with different times
+	 * 
 	 * @return boolean
+	 * @param  string
 	 */
-	public function is_multi_day($row)
+	public function isMultiDayDiff($times)
 	{
-		$time_html = strtolower($row->find('td', 2)->innertext);
+		$time_html = strtoupper($times);
+		$time_html = str_replace('<BR />', '<BR>', $time_html);
 
-		if (strpos($time_html, '<br>') !== FALSE)
+		if (strpos($time_html, '<BR>') !== FALSE)
 			return TRUE;
 		else
 			return FALSE;
@@ -252,4 +256,22 @@ function strip_nb(&$s) {
 function strip_double_space(&$s) {
 	$s = str_replace('   ', '  ', $s);
 	$s = str_replace('  ', ' ', $s);
+}
+
+function fixTimeFormat(&$s) {
+	$s = str_replace('AM', ' AM', $s);
+	$s = str_replace('PM', ' PM', $s);
+
+	list($num, $ampm) = explode(' ', $s, 2);
+
+	if (strlen($num) == 3)
+		$num = '0'.$num;
+	
+	$chunks = str_split($num, 2);
+	//Convert array to string.  Each element separated by the given separator.
+	$num = implode(':', $chunks);
+
+	$s = $num.' '.$ampm;
+
+	return $s;
 }
